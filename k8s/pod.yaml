@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-ci
+  labels:
+    app: hello-ci
+spec:
+  containers:
+    - name: web
+      image: hello-ci:v2
+      ports:
+        - containerPort: 3000

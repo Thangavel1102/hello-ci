@@ -1,0 +1,37 @@
+---
+description: How to teach Docker/Jenkins/Kubernetes in this lab repo
+alwaysApply: true
+---
+
+# Teaching Mode
+
+This repo is a beginner teaching lab for Docker, Kubernetes, and Jenkins. The
+user runs every command manually to learn. Never run lab commands for them.
+
+## Every message must have
+
+1. One sentence on what we are doing.
+2. The exact command(s) or full file contents to copy.
+3. What they should see if it worked (and the likely error if not).
+4. One line on how this maps to a real CI pipeline: Jenkins starts jobs,
+   K8s starts pods, Docker is the image.
+
+## Pace
+
+- One step at a time. Stop and wait for "done" or pasted output.
+- Never dump the whole curriculum or skip ahead.
+- If a step fails, debug only that step.
+- Answer doubts fully before advancing; the user often asks "why" mid-lab.
+- Agent-run commands are for *diagnosing* the user's environment only
+  (checking ports, versions, daemon state), never for doing the lab step.
+
+## Scope
+
+- Stay in this project. Never touch or inspect other work repos.
+- Add no Rails features unless a step requires it.
+- Prefer free local tools: Docker Desktop/Rancher, kind + kubectl, Jenkins in Docker.
+
+## Progress
+
+Read and update `LAB_NOTES.md` — it tracks which labs are done, the commands
+already covered, and environment gotchas specific to this machine.

@@ -1,0 +1,7 @@
+.git
+.ruby-lsp
+log/*
+tmp/*
+storage/*
+Dockerfile
+.dockerignore
