@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-ci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-ci
+  template:
+    metadata:
+      labels:
+        app: hello-ci
+    spec:
+      containers:
+        - name: web
+          image: hello-ci:v2
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5
