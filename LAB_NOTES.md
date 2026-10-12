@@ -93,7 +93,7 @@ separate. `gh auth login` stores credentials in the keychain — but it defers t
 `GITHUB_TOKEN` env var if one is set (`~/.zshrc` line 129 had one; `unset` it).
 Plain `git` never reads `GITHUB_TOKEN`.
 
-## Lab 2 bonus — Deployment + Service (in progress)
+## Lab 2 bonus — Deployment + Service ✅
 
 Manifests: `k8s/deployment.yaml`, `k8s/service.yaml`.
 
@@ -120,23 +120,55 @@ up); what it lacks is replacement when the pod itself is deleted.
 The `readinessProbe` on `/health` in `deployment.yaml` is what gates whether a pod
 joins the Service — the basis of zero-downtime deploys.
 
+### Rolling update and rollback
+
+| Command | Purpose |
+| --- | --- |
+| `kubectl scale deployment hello-ci --replicas=3` | Imperative — **changes the cluster, not the file** |
+| `kubectl apply -f <abs path>/k8s/deployment.yaml` | Declarative; prints `configured` when something changed |
+| `kubectl rollout status deployment/hello-ci` | Blocks until converged; non-zero exit if it stalls |
+| `kubectl rollout history deployment/hello-ci` | Revisions kept for rollback |
+| `kubectl rollout undo deployment/hello-ci` | Swap to the previous revision; run twice to return |
+| `kubectl get deployment hello-ci -o jsonpath='{.spec.template.spec.containers[0].image}'` | What is *actually* deployed |
+
+Full update sequence: edit code → `docker build -t hello-ci:v3 .` →
+`kind load docker-image hello-ci:v3 --name hello-lab` → edit `image:` in the YAML
+→ `apply`. Miss the `kind load` and you get `ImagePullBackOff`.
+
+**Drift — the big lesson.** `kubectl scale` set replicas to 3 in the cluster but
+the YAML still said 1, so the next `apply` silently scaled back down to 1. The
+file is the source of truth; anything changed by hand gets reverted on the next
+apply. Note `rollout status` can report "successfully rolled out" while running
+the *old* image — it only means current desired state is met, so check the image
+field to know what shipped.
+
+Rollback is seconds because v2 and v3 are separate immutable images that both
+still exist. Reusing one tag would have made rollback a full rebuild instead.
+
+During a rollout both versions serve traffic at once, so changes must be
+backward compatible for those few seconds.
+
+### Two real bugs hit here
+
+- **Pod hostname shadows the Service name.** From the bare pod named `hello-ci`,
+  `curl http://hello-ci/` resolved via `/etc/hosts` to the pod's *own* IP
+  (10.244.0.2) on port 80 — nothing listening, so `curl -s` printed empty lines.
+  `/etc/hosts` beats cluster DNS. Pods in the Deployment have different hostnames
+  and are unaffected.
+- **Rails Host Authorization blocks Service DNS names.** Requests through the
+  Service carry `Host: hello-ci...`, which Rails rejects with a "Blocked hosts"
+  page. The readiness probe still passed because the kubelet calls by IP — so the
+  pods looked healthy while real traffic failed. Fixed in
+  `config/environments/development.rb` with `config.hosts << "hello-ci"` and
+  `config.hosts << ".svc.cluster.local"`.
+
 ### Current cluster state
 
-- Deployment `hello-ci`, **1 replica**, image `hello-ci:v2`.
+- Deployment `hello-ci`, **3 replicas**, image `hello-ci:v3`.
 - Service `hello-ci` at `10.96.73.137:80` → pod port 3000.
 - Bare pod `hello-ci` from `k8s/pod.yaml` is **deliberately kept** for the team
   demo (contrast: delete it and it stays gone). Its `app` label was removed so
-  the Service ignores it.
-
-### Resume here
-
-1. `kubectl scale deployment hello-ci --replicas=3`, then watch the endpoint list
-   grow from 1 to 3 without touching the Service.
-2. Rolling update: change the message string, `docker build -t hello-ci:v3 .`,
-   `kind load docker-image hello-ci:v3 --name hello-lab`,
-   `kubectl set image deployment/hello-ci web=hello-ci:v3`, and curl in a loop to
-   see zero failed requests while pods are replaced one at a time.
-3. `kubectl rollout status` / `kubectl rollout undo` to roll back to v2.
+  the Service ignores it. Handy as an in-cluster curl client.
 
 ## Lab 3 — Jenkins (not started)
 

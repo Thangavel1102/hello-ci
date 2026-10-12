@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: hello-ci
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: hello-ci
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: hello-ci:v2
+          image: hello-ci:v3
           ports:
             - containerPort: 3000
           readinessProbe:
