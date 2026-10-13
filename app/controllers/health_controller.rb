@@ -3,7 +3,7 @@ class HealthController < ApplicationController
     render json: {
       status: "ok",
       app: "hello-ci",
-      message: "hello from image v3"
+      message: "hello from image v4"
     }
   end
 end

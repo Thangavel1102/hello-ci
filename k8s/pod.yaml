@@ -7,6 +7,6 @@ metadata:
 spec:
   containers:
     - name: web
-      image: hello-ci:v2
+      image: hello-ci:v4
       ports:
         - containerPort: 3000
